@@ -2406,10 +2406,10 @@ axios@^1.7.4:
     form-data "^4.0.0"
     proxy-from-env "^1.1.0"
 
-azion-theme@^1.5.6:
-  version "1.5.6"
-  resolved "https://registry.yarnpkg.com/azion-theme/-/azion-theme-1.5.6.tgz#d79c180eccca682daf63310fcf8c2a990ba53686"
-  integrity sha512-SzMJomUs52SW4wJl05CjqvC6q9mLg2fG62yZRlheuuKYCuNjx11APZWvOHaszbN8ampLZDZJzolHZQhJiOf0Bg==
+azion-theme@^1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/azion-theme/-/azion-theme-1.6.0.tgz#638bb08389a7a53788116103a3d689911304c49b"
+  integrity sha512-vuK1WxKOwOQXS2liE+6CXKfwwK7H36WueE1lHCRYiejpSImP2FX7LGqmGgSMdgsjOTn/YInVMtQ9c6bNpdWJoA==
 
 balanced-match@^1.0.0:
   version "1.0.2"
