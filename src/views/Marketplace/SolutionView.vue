@@ -68,7 +68,7 @@
         <!-- Right Sidebar -->
         <div class="flex flex-col gap-6 w-full lg:max-w-md lg:sticky lg:top-24 self-start">
           <!-- Card -->
-          <div class="p-6 sm:p-8 border rounded surface-border">
+          <div class="p-6 sm:p-8 border rounded surface-card surface-border">
             <div class="text-xl font-medium mb-3">{{ sidebarTitle }}</div>
             <p class="text-base text-color-secondary mb-8">
               {{ sidebarDescription }}

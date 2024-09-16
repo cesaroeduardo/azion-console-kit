@@ -49,7 +49,7 @@
                 @change="changeCategory"
                 option-label="name"
                 :optionDisabled="disabledOption"
-                class="w-full md:w-14rem border-none sm:min-w-[12rem]"
+                class="w-full surface-ground md:w-14rem border-none sm:min-w-[12rem]"
                 :pt="{
                   list: { class: 'p-0' }
                 }"

@@ -145,7 +145,7 @@
           />
         </div>
         <div
-          class="w-full p-3 sm:p-8 surface-border border rounded-md flex flex-col gap-6 lg:gap-10 justify-between"
+          class="w-full p-3 sm:p-8 surface-card surface-border border rounded-md flex flex-col gap-6 lg:gap-10 justify-between"
         >
           <div class="flex flex-col gap-4 max-w-4xl">
             <h1 class="text-color text-2xl md:text-3xl font-medium">Get Started</h1>
@@ -167,7 +167,9 @@
 
         <div class="flex flex-col xl:flex-row gap-6">
           <!-- Manage Applications -->
-          <div class="w-full p-3 sm:p-6 flex flex-col gap-6 surface-border border rounded-md">
+          <div
+            class="w-full p-3 sm:p-6 flex flex-col gap-6 surface-card surface-border border rounded-md"
+          >
             <div class="flex flex-row justify-start gap-3">
               <div
                 class="w-11 h-11 flex flex-shrink-0 justify-center items-center rounded-md surface-200"
@@ -207,7 +209,9 @@
             </div>
           </div>
           <!-- View Analytics -->
-          <div class="w-full p-3 sm:p-6 flex flex-col gap-6 surface-border border rounded-md">
+          <div
+            class="w-full p-3 sm:p-6 flex flex-col gap-6 surface-card surface-border border rounded-md"
+          >
             <div class="flex flex-row justify-start gap-3">
               <div
                 class="w-11 h-11 flex flex-shrink-0 justify-center items-center rounded-md surface-200"
@@ -249,7 +253,7 @@
         </div>
 
         <div
-          class="w-full p-3 sm:p-6 surface-border border rounded-md flex flex-col gap-6 justify-between relative"
+          class="w-full p-3 sm:p-6 surface-card surface-border border rounded-md flex flex-col gap-6 justify-between relative"
           v-if="showInviteSession"
         >
           <PrimeButton
@@ -298,7 +302,7 @@
           <!-- Product -->
           <button
             type="button"
-            class="sm:h-auto lg:h-40 hover:border-primary w-full p-3 sm:p-6 text-start flex flex-col gap-2 surface-border border rounded-md"
+            class="sm:h-auto lg:h-40 hover:border-primary surface-card w-full p-3 sm:p-6 text-start flex flex-col gap-2 surface-border border rounded-md"
             @click="openProductDocumentation"
           >
             <div class="text-lg font-medium">Product Documentation</div>
@@ -309,7 +313,7 @@
           <!-- API -->
           <button
             type="button"
-            class="sm:h-auto lg:h-40 hover:border-primary w-full p-3 sm:p-6 text-start flex flex-col gap-2 surface-border border rounded-md"
+            class="sm:h-auto lg:h-40 hover:border-primary surface-card w-full p-3 sm:p-6 text-start flex flex-col gap-2 surface-border border rounded-md"
             @click="openAPIDocumentation"
           >
             <div class="text-lg font-medium">API Documentation</div>
@@ -320,7 +324,7 @@
           <!-- Contact -->
           <button
             type="button"
-            class="sm:h-auto lg:h-40 hover:border-primary w-full p-3 sm:p-6 text-start flex flex-col gap-2 surface-border border rounded-md"
+            class="sm:h-auto lg:h-40 hover:border-primary surface-card w-full p-3 sm:p-6 text-start flex flex-col gap-2 surface-border border rounded-md"
             @click="openContactSupport"
           >
             <div class="text-lg font-medium">Contact Support</div>
