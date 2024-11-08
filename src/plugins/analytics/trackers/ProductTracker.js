@@ -56,6 +56,21 @@ export class ProductTracker {
 
   /**
    * @param {Object} payload
+   * @param {String} productName
+   * @returns {AnalyticsTrackerAdapter}
+   */
+  clickedOnEvent(productName, payload) {
+    this.#trackerAdapter.addEvent({
+      eventName: `Clicked on ${productName}`,
+      props: {
+        ...payload
+      }
+    })
+    return this.#trackerAdapter
+  }
+
+  /**
+   * @param {Object} payload
    * @param {AzionProductsNames} payload.productName
    * @param {String} payload.createdFrom
    * @param {String} payload.from
@@ -136,6 +151,19 @@ export class ProductTracker {
         fieldName: payload.fieldName,
         errorMessage: payload.errorMessage
       }
+    })
+    return this.#trackerAdapter
+  }
+
+  /**
+   * @param {Object} payload
+   * @param {String} payload.target
+   * @returns {AnalyticsTrackerAdapter}
+   */
+  clickedOn(payload) {
+    this.#trackerAdapter.addEvent({
+      eventName: `Clicked on ${payload.target}`,
+      props: {}
     })
     return this.#trackerAdapter
   }

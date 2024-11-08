@@ -23,13 +23,19 @@
     },
     contactSalesEdgeApplicationService: {
       type: Function
+    },
+    isDrawer: {
+      type: Boolean
     }
   })
 
   const HTTP_PORT_LIST_OPTIONS = [
     { name: '80 (Default)', value: '80' },
     { name: '8008', value: '8008' },
-    { name: '8080', value: '8080' }
+    { name: '8080', value: '8080' },
+
+    // Custom Ports
+    { name: '8880', value: '8880' }
   ]
   const HTTPS_PORT_LIST_OPTIONS = [
     { name: '443 (Default)', value: '443' },
@@ -37,7 +43,15 @@
     { name: '9440', value: '9440' },
     { name: '9441', value: '9441' },
     { name: '9442', value: '9442' },
-    { name: '9443', value: '9443' }
+    { name: '9443', value: '9443' },
+
+    // Custom Ports
+    { name: '7777', value: '7777' },
+    { name: '8888', value: '8888' },
+    { name: '9553', value: '9553' },
+    { name: '9653', value: '9653' },
+    { name: '8035', value: '8035' },
+    { name: '8090', value: '8090' }
   ]
   const TLS_VERSIONS_OPTIONS = [
     { label: 'None', value: 'none' },
@@ -204,6 +218,7 @@
 <template>
   <FormHorizontal
     title="General"
+    :isDrawer="isDrawer"
     description="Create an edge application to deliver your content from the edge."
     v-if="handleBlock('general')"
     data-testid="form-horizontal-general"
@@ -225,6 +240,7 @@
 
   <FormHorizontal
     title="Delivery Settings"
+    :isDrawer="isDrawer"
     description="Choose the protocols used between the edge application and users."
     v-if="handleBlock('delivery-settings')"
     data-testid="form-horizontal-delivery-settings"
@@ -366,6 +382,7 @@
 
   <FormHorizontal
     title="Default Origin"
+    :isDrawer="isDrawer"
     description="Customize settings related to origin servers and hosts."
     v-if="handleBlock('default-origins')"
     data-testid="form-horizontal-default-origin"
@@ -444,6 +461,7 @@
 
   <FormHorizontal
     title="Cache Expiration Policies"
+    :isDrawer="isDrawer"
     description="Define how the edge should handle TTL values sent by the origin as well as how long your content should remain cached at the edge."
     v-if="handleBlock('cache-expiration-policies')"
     data-testid="form-horizontal-cache-expiration-policies"
@@ -519,6 +537,7 @@
   </FormHorizontal>
 
   <FormHorizontal
+    :isDrawer="isDrawer"
     title="Modules"
     description="Activate modules to extend the configuration possibilities of the application. Some modules require subscription."
     v-if="handleBlock('edge-application-modules')"
@@ -572,6 +591,7 @@
 
   <FormHorizontal
     title="Debug Rules"
+    :isDrawer="isDrawer"
     description="Log executed rules created in Rules Engine. Query logs using Data Stream, Real-Time Events, or Real-Time Events GraphQL API."
     v-if="handleBlock('debug-rules')"
     data-testid="form-horizontal-debug-rules"

@@ -15,11 +15,12 @@
       :value="data"
       dataKey="id"
       @row-click="editItemSelected"
-      rowHover
+      :rowHover="!disabledList"
       v-model:filters="filters"
-      :paginator="showPagination"
+      :paginator="true"
       :rowsPerPageOptions="[10, 20, 50, 100]"
-      :rows="MINIMUM_OF_ITEMS_PER_PAGE"
+      :rows="minimumOfItemsPerPage"
+      @page="changeNumberOfLinesPerPage"
       :globalFilterFields="filterBy"
       v-model:selection="selectedItems"
       :exportFilename="exportFileName"
@@ -68,6 +69,7 @@
             >
               <PrimeButton
                 class="max-sm:w-full"
+                :disabled="disabledList"
                 @click="navigateToAddPage"
                 icon="pi pi-plus"
                 :data-testid="`create_${addButtonLabel}_button`"
@@ -99,7 +101,7 @@
         :field="col.field"
         :header="col.header"
         :sortField="col?.sortField"
-        class="hover:cursor-pointer"
+        :class="{ 'hover:cursor-pointer': !disabledList }"
         data-testid="data-table-column"
       >
         <template #body="{ data: rowData }">
@@ -228,6 +230,7 @@
 
     <DataTable
       v-else
+      :disabled="disabledList"
       :value="Array(10)"
       :pt="{
         header: { class: '!border-t-0' }
@@ -255,14 +258,20 @@
                 data-testid="data-table-skeleton-search-input"
               />
             </span>
-            <PrimeButton
-              class="max-sm:w-full"
-              @click="navigateToAddPage"
-              icon="pi pi-plus"
-              :label="addButtonLabel"
-              v-if="addButtonLabel"
-              data-testid="data-table-skeleton-add-button"
-            />
+            <slot
+              name="addButton"
+              data-testid="data-table-add-button"
+            >
+              <PrimeButton
+                class="max-sm:w-full"
+                :disabled="disabledList"
+                @click="navigateToAddPage"
+                icon="pi pi-plus"
+                :label="addButtonLabel"
+                v-if="addButtonLabel"
+                data-testid="data-table-skeleton-add-button"
+              />
+            </slot>
           </div>
         </slot>
       </template>
@@ -299,6 +308,7 @@
   import { useToast } from 'primevue/usetoast'
   import { getCsvCellContentFromRowData } from '@/helpers'
   import { getArrayChangedIndexes } from '@/helpers/get-array-changed-indexes'
+  import { useTableDefinitionsStore } from '@/stores/table-definitions'
 
   defineOptions({ name: 'list-table-block-new' })
 
@@ -310,6 +320,9 @@
   ])
 
   const props = defineProps({
+    disabledList: {
+      type: Boolean
+    },
     hiddenHeader: {
       type: Boolean
     },
@@ -346,11 +359,19 @@
       type: Boolean,
       default: true
     },
+    enableEditCustomRedirect: {
+      type: Boolean,
+      default: false
+    },
     reorderableRows: {
       type: Boolean
     },
     onReorderService: {
       type: Function
+    },
+    isReorderAllEnabled: {
+      type: Boolean,
+      default: false
     },
     emptyListMessage: {
       type: String,
@@ -383,7 +404,9 @@
     }
   })
 
-  const MINIMUM_OF_ITEMS_PER_PAGE = 10
+  const tableDefinitions = useTableDefinitionsStore()
+
+  const minimumOfItemsPerPage = ref(tableDefinitions.getNumberOfLinesPerPage)
   const isRenderActions = !!props.actions?.length
   const isRenderOneOption = props.actions?.length === 1
   const selectedId = ref(null)
@@ -438,7 +461,7 @@
 
   const onRowReorder = async (event) => {
     try {
-      const tableData = getArrayChangedIndexes(data.value, event.value)
+      const tableData = getArrayChangedIndexes(data.value, event.value, props.isReorderAllEnabled)
       data.value = event.value
       await props.onReorderService(tableData)
       reload()
@@ -539,8 +562,11 @@
 
   const editItemSelected = ({ data: item }) => {
     emit('on-before-go-to-edit', item)
+
     if (props.editInDrawer) {
       props.editInDrawer(item)
+    } else if (props.enableEditCustomRedirect) {
+      emit('on-row-click-edit-redirect', item)
     } else if (props.enableEditClick) {
       router.push({ path: `${props.editPagePath}/${item.id}` })
     }
@@ -563,7 +589,7 @@
     loadData({ page: 1, ...query })
   }
 
-  defineExpose({ reload, handleExportTableDataToCSV })
+  defineExpose({ reload, handleExportTableDataToCSV, data })
 
   const extractFieldValue = (rowData, field) => {
     return rowData[field]
@@ -577,15 +603,17 @@
     }
   }
 
+  const changeNumberOfLinesPerPage = (event) => {
+    const numberOfLinesPerPage = event.rows
+    tableDefinitions.setNumberOfLinesPerPage(numberOfLinesPerPage)
+    minimumOfItemsPerPage.value = numberOfLinesPerPage
+  }
+
   const filterBy = computed(() => {
     const filtersPath = props.columns.filter((el) => el.filterPath).map((el) => el.filterPath)
     const filters = props.columns.map((item) => item.field)
 
     return [...filters, ...filtersPath]
-  })
-
-  const showPagination = computed(() => {
-    return data.value.length > MINIMUM_OF_ITEMS_PER_PAGE
   })
 
   watch(data, (currentState) => {

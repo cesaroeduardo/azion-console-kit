@@ -17,6 +17,8 @@
         @on-load-data="handleLoadData"
         emptyListMessage="No teams found."
         :actions="actions"
+        @on-before-go-to-add-page="handleTrackEventGoToCreate"
+        @on-before-go-to-edit="handleTrackEventGoToEdit"
       >
       </ListTableBlock>
       <EmptyResultsBlock
@@ -25,6 +27,7 @@
         title="No teams have been created"
         description="Click the button below to create your first team and add permissions."
         createButtonLabel="Team"
+        @click-to-create="handleTrackEventGoToCreate"
         createPagePath="teams-permission/create"
         :documentationService="documentationService"
       >
@@ -43,7 +46,10 @@
   import ListTableBlock from '@/templates/list-table-block'
   import { columnBuilder } from '@/templates/list-table-block/columns/column-builder'
   import PageHeadingBlock from '@/templates/page-heading-block'
-  import { computed, ref } from 'vue'
+  import { computed, ref, inject } from 'vue'
+
+  /**@type {import('@/plugins/analytics/AnalyticsTrackerAdapter').AnalyticsTrackerAdapter} */
+  const tracker = inject('tracker')
 
   const props = defineProps({
     listTeamPermissionService: { required: true, type: Function },
@@ -90,4 +96,16 @@
       }
     ]
   })
+
+  const handleTrackEventGoToCreate = () => {
+    tracker.product.clickToCreate({
+      productName: 'Teams Permissions'
+    })
+  }
+
+  const handleTrackEventGoToEdit = () => {
+    tracker.product.clickToEdit({
+      productName: 'Teams Permissions'
+    })
+  }
 </script>

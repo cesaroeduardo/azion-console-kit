@@ -37,6 +37,16 @@
       class="w-full sm:max-w-xs"
     />
   </div>
+  <div
+    class="border-1 border-bottom-none border-round-top-xl p-3.5 surface-border rounded-md mt-5 rounded-b-none"
+  >
+    <advancedFilter
+      v-model:externalFilter="selectedFilter"
+      v-model:filterAdvanced="selectedFilterAdvanced"
+      :fieldsInFilter="listFields"
+      @applyFilter="filterSearch"
+    />
+  </div>
   <ListTableBlock
     v-show="showListTable"
     pageTitleDelete="WAF rules tuning"
@@ -48,24 +58,18 @@
     :showSelectionMode="true"
     :editInDrawer="openMoreDetails"
     emptyListMessage="No requests found."
-    isTabs
-  >
-    <template #header>
-      <advancedFilter
-        v-model:externalFilter="selectedFilter"
-        v-model:filterAdvanced="selectedFilterAdvanced"
-        :fieldsInFilter="listFields"
-        @applyFilter="filterSearch"
-      />
-    </template>
-  </ListTableBlock>
+    hiddenHeader
+    :pt="{ root: { class: 'rounded-t-none' } }"
+  />
 
   <EmptyResultsBlock
     v-if="!showListTable"
     title="Select a domain to query data"
     description="To use this feature, a domain must be associated with the edge firewall that has a behavior running this WAF rule set."
     :documentationService="props.documentationServiceTuning"
-    :inTabs="true"
+    inTabs
+    noShowBorderTop
+    class="!mt-0"
   >
     <template #default>
       <PrimeButton
@@ -122,8 +126,12 @@
   import advancedFilter from '@/templates/advanced-filter'
   import MultiSelect from 'primevue/multiselect'
   import { useToast } from 'primevue/usetoast'
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, onMounted, ref, inject } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
+  import { handleTrackerError } from '@/utils/errorHandlingTracker'
+
+  /** @type {import('@/plugins/analytics/AnalyticsTrackerAdapter').AnalyticsTrackerAdapter} */
+  const tracker = inject('tracker')
 
   const props = defineProps({
     listWafRulesTuningService: {
@@ -180,7 +188,7 @@
   const allowedByAttacks = ref([])
   const selectedFilterAdvanced = ref([])
   const listServiceWafTunningRef = ref('')
-
+  const allowRuleOrigin = ref('')
   const valueDomains = computed({
     get: () => {
       if (domainsOptions.value.done) return []
@@ -324,8 +332,10 @@
       .map((domain) => domain.name)
   }
 
-  const openDialog = () => {
+  const openDialog = (origin = 'page') => {
     showDialogAllowRule.value = true
+    allowRuleOrigin.value = origin
+    tracker.wafRules.clickedToAllowRules({ origin }).track()
   }
 
   const cancelAllowed = () => {
@@ -362,25 +372,46 @@
         wafId: wafRuleId.value,
         description: reasonAttack
       })
+
       if (status === 'rejected') {
-        showToast(reason, 'error')
-        return
+        throw new Error(reason)
       }
+
       showToast(value, 'success')
       filterSearch()
       closeDialog()
       selectedEvents.value = []
       allowedByAttacks.value = []
       showDetailsOfAttack.value = false
+      handleTrackAllowRule()
     } catch (error) {
-      showToast(error, 'error')
+      let errorMessage = error?.message || error
+
+      handleTrackFailedToAllowRules(errorMessage)
+      showToast(errorMessage, 'error')
     } finally {
       isLoadingAllowed.value = false
     }
   }
 
+  const handleTrackFailedToAllowRules = (error) => {
+    const { fieldName, message } = handleTrackerError(error)
+    tracker.wafRules
+      .failedToAllowRules({
+        errorType: 'api',
+        fieldName: fieldName.trim(),
+        errorMessage: message,
+        origin: allowRuleOrigin.value
+      })
+      .track()
+  }
+
+  const handleTrackAllowRule = () => {
+    tracker.wafRules.allowedRules({ origin: allowRuleOrigin.value }).track()
+  }
+
   const createAllowedByAttack = (value) => {
-    openDialog()
+    openDialog('drawer')
     allowedByAttacks.value = value
   }
 
@@ -390,6 +421,9 @@
 
   const filterSearch = async (filter) => {
     if (!selectedFilter.value.domains.length) return
+
+    tracker.product.clickedOn({ target: 'Search' }).track()
+
     const { disabledIP, disabledCountries } = selectedFilter.value.network || {}
 
     listFields.value.find((item) => item.value === 'ip_address').disabled = disabledIP

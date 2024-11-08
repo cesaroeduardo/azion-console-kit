@@ -108,7 +108,9 @@ export function formatC3XAxis(chartData, resultChart) {
     xAxis.min = CHART_RULES.RESET_COUNT
     xAxis.tick = {
       ...xAxis.tick,
-      width: CHART_RULES.LABEL.rotatedWidth
+      width: CHART_RULES.LABEL.rotatedWidth,
+      multiline: true,
+      multilineMax: 2
     }
   }
 
@@ -273,8 +275,11 @@ function generateMeanLineValues(resultChart, mean) {
  * @returns {string} - The title case string
  */
 export function camelToTitle(text) {
-  const title = text.replace(/([A-Z])/g, ' $1').replace(/([a-zA-Z])(\d+)/g, '$1 $2')
-  return title.charAt(0).toUpperCase() + title.slice(1)
+  return text
+    .replace(/([a-z])([A-Z0-9])/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
 /**
@@ -527,6 +532,16 @@ export function FormatC3GraphProps({
     tooltip: {
       show: window.innerWidth > CHART_RULES.SCREEN_XSMALL_BREAKPOINT,
       contents(d, defaultTitleFormat, defaultValueFormat, color) {
+        if (chartData.type === 'ordered-bar') {
+          const { index } = d[0]
+          return this.getTooltipContent(
+            resetTooltipLabel(d),
+            defaultTitleFormat,
+            defaultValueFormat,
+            () => CHART_RULES.BASE_COLOR_PATTERNS[index]
+          )
+        }
+
         return this.getTooltipContent(
           resetTooltipLabel(d),
           defaultTitleFormat,
@@ -540,9 +555,16 @@ export function FormatC3GraphProps({
             return new Date(d).toLocaleString('en-US')
           }
           if (typeof d === 'number') {
-            return ''
+            return null
           }
           return d
+        },
+        name: (name, _, __, idx) => {
+          if (chartData.type === 'ordered-bar') {
+            return resultChart[0][idx + 1]
+          }
+
+          return name
         },
         value: function (value) {
           return formatYAxisLabels(value, chartData)

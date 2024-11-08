@@ -1,8 +1,11 @@
+import { inject } from 'vue'
 import { accountRoutes } from '@routes/account-routes'
 import { activityHistoryRoutes } from '@routes/activity-history-routes'
 import { azionAiRoutes } from '@routes/azion-ai-routes'
+
 import { cliCallbackRoutes } from '@routes/cli-callback-routes'
 import { createNewRoutes } from '@routes/create-new-routes'
+import { compareWithAzionRoutes } from '@routes/compare-with-azion'
 import { dataStreamRoutes } from '@/router/routes/data-stream-routes'
 import { digitalCertificatesRoutes } from '@routes/digital-certificates-routes'
 import { domainsRoutes } from '@routes/domains-routes'
@@ -38,7 +41,9 @@ import { billingRoutes } from '@/router/routes/billing-routes'
 import { createRouter, createWebHistory } from 'vue-router'
 import afterEachRouteGuard from './hooks/afterEachRoute'
 import beforeEachRoute from './hooks/beforeEachRoute'
-import redirectToManager from './hooks/redirectToManager'
+import { useAccountStore } from '@/stores/account'
+import { identityProvidersRoutes } from '@routes/identity-providers-routes'
+import { loadContractServicePlan } from '@/services/contract-services'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -49,6 +54,7 @@ const router = createRouter({
     domainsRoutes,
     edgeApplicationRoutes,
     edgeFirewallRoutes,
+    identityProvidersRoutes,
     edgeFunctionsRoutes,
     edgePulseRoutes,
     edgeServicesRoutes,
@@ -78,12 +84,26 @@ const router = createRouter({
     githubRoutes,
     billingRoutes,
     importGithubRoutes,
-    azionAiRoutes
+    azionAiRoutes,
+    compareWithAzionRoutes
   ].concat(errorRoutes)
 })
 
-router.beforeEach(beforeEachRoute)
-router.beforeEach(redirectToManager)
+router.beforeEach(async (to, from, next) => {
+  const accountStore = useAccountStore()
+  /** @type {import('@/plugins/analytics/AnalyticsTrackerAdapter').AnalyticsTrackerAdapter} */
+  const tracker = inject('tracker')
+
+  await beforeEachRoute({
+    to,
+    from,
+    next,
+    accountStore,
+    loadContractServicePlan,
+    tracker
+  })
+})
+
 router.afterEach(afterEachRouteGuard)
 
 export default router

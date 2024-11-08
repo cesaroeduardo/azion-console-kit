@@ -1158,7 +1158,7 @@ ts
     gqlQuery: {
       query: `query ($tsRange_begin:DateTime!, $tsRange_end:DateTime!) {
       botManagerMetrics (
-        limit: 5000
+        limit: 10000
         aggregate: {sum: requests 
 }
         groupBy: [ts, classified]
@@ -1209,7 +1209,6 @@ botCategoryIn: ["","Non-Bot Like"]
         ) {
           action
 sum
-action
         }
       }`,
       variables: {
@@ -1235,7 +1234,6 @@ begin: $tsRange_begin
 end: $tsRange_end
 
 }
-actionEq: "redirect"
 
         }
         ) {
@@ -1267,13 +1265,11 @@ begin: $tsRange_begin
 end: $tsRange_end
 
 }
-actionEq: "redirect"
 
         }
         ) {
           challengeSolved
 sum
-challengeSolved
         }
       }`,
       variables: {
@@ -1308,7 +1304,6 @@ botCategoryIn: ["","Non-Bot Like"]
         ) {
           botCategory
 sum
-botCategory
         }
       }`,
       variables: {
@@ -1326,7 +1321,7 @@ botCategory
         limit: 5000
         aggregate: {sum: requests 
 }
-        groupBy: [geoipCountry]
+        groupBy: [geolocCountryName]
         orderBy: [sum_ASC]
         filter: {
           tsRange: {
@@ -1338,9 +1333,8 @@ classifiedIn: ["bad bot","good bot"]
 
         }
         ) {
-          geoipCountry
+          geolocCountryName
 sum
-geoipCountry
         }
       }`,
       variables: {
@@ -1371,6 +1365,128 @@ end: $tsRange_end
         ) {
           sum
 ts
+        }
+      }`,
+      variables: {
+        tsRange_begin: '2024-01-01T12:00:00',
+        tsRange_end: '2024-12-01T12:00:00'
+      }
+    }
+  },
+  {
+    id: '352234687543902797',
+    label: 'Total Requests',
+    gqlQuery: {
+      query: `query ($tsRange_begin:DateTime!, $tsRange_end:DateTime!) {
+      dataStreamedMetrics (
+        limit: 5000
+        aggregate: {sum: streamedLines 
+}
+        groupBy: [ts]
+        orderBy: [ts_ASC]
+        filter: {
+          tsRange: {
+begin: $tsRange_begin
+end: $tsRange_end
+
+}
+
+        }
+        ) {
+          sum
+ts
+        }
+      }`,
+      variables: {
+        tsRange_begin: '2024-01-01T12:00:00',
+        tsRange_end: '2024-12-01T12:00:00'
+      }
+    }
+  },
+  {
+    id: '847143804009563421',
+    label: 'Impacted URLs',
+    gqlQuery: {
+      query: `query ($tsRange_begin:DateTime!, $tsRange_end:DateTime!) {
+      securityMetrics (
+        limit: 10000
+        aggregate: {sum: value 
+}
+        groupBy: [ts]
+        orderBy: [ts_DESC]
+        filter: {
+          tsRange: {
+begin: $tsRange_begin
+end: $tsRange_end
+
+}
+metricEq: "uniq_request_url"
+datasetEq: "bot_manager"
+
+        }
+        ) {
+          sum
+ts
+        }
+      }`,
+      variables: {
+        tsRange_begin: '2024-01-01T12:00:00',
+        tsRange_end: '2024-12-01T12:00:00'
+      }
+    }
+  },
+  {
+    id: '978435123222265554',
+    label: 'Top Bad Bot IPs',
+    gqlQuery: {
+      query: `query ($tsRange_begin:DateTime!, $tsRange_end:DateTime!) {
+      botManagerBreakdownMetrics (
+        limit: 10
+        aggregate: {sum: badBotRequests 
+}
+        groupBy: [remoteAddr]
+        orderBy: [sum_DESC]
+        filter: {
+          tsRange: {
+begin: $tsRange_begin
+end: $tsRange_end
+
+}
+
+        }
+        ) {
+          remoteAddr
+sum
+        }
+      }`,
+      variables: {
+        tsRange_begin: '2024-01-01T12:00:00',
+        tsRange_end: '2024-12-01T12:00:00'
+      }
+    }
+  },
+  {
+    id: '1030427483148242',
+    label: 'Top Impacted URLs',
+    gqlQuery: {
+      query: `query ($tsRange_begin:DateTime!, $tsRange_end:DateTime!) {
+      botManagerBreakdownMetrics (
+        limit: 10
+        aggregate: {sum: botRequests 
+}
+        groupBy: [requestUrl]
+        orderBy: [sum_DESC]
+        filter: {
+          tsRange: {
+begin: $tsRange_begin
+end: $tsRange_end
+
+}
+
+        }
+        ) {
+          requestUrl
+sum
         }
       }`,
       variables: {

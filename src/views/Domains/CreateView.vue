@@ -17,7 +17,12 @@
           <FormFieldsCreateDomains
             :digitalCertificates="digitalCertificates"
             :edgeApplicationsData="edgeApplicationsData"
+            :edgeFirewallsData="edgeFirewallsData"
             :isLoadingRequests="isLoadingRequests"
+            :isLoadingEdgeFirewalls="isLoadingEdgeFirewalls"
+            :updateDigitalCertificates="updateDigitalCertificates"
+            @edgeApplicationCreated="handleEdgeApplicationCreated"
+            @edgeFirewallCreated="handleEdgeFirewallCreated"
           />
         </template>
         <template #action-bar="{ onSubmit, onCancel, loading }">
@@ -43,6 +48,7 @@
   import ActionBarTemplate from '@/templates/action-bar-block/action-bar-with-teleport'
   import CopyDomainDialog from './Dialog/CopyDomainDialog.vue'
   import { useRoute, useRouter } from 'vue-router'
+  import { listEdgeFirewallService } from '@/services/edge-firewall-services'
   import { useDialog } from 'primevue/usedialog'
   import * as yup from 'yup'
   import { handleTrackerError } from '@/utils/errorHandlingTracker'
@@ -76,9 +82,11 @@
   const router = useRouter()
 
   const edgeApplicationsData = ref([])
+  const edgeFirewallsData = ref([])
   const digitalCertificates = ref([])
   const domainName = ref('')
   const isLoadingRequests = ref(true)
+  const isLoadingEdgeFirewalls = ref(true)
 
   const handleResponse = (value) => {
     domainName.value = value?.domainName
@@ -141,7 +149,33 @@
   }
 
   const requestEdgeApplications = async () => {
-    edgeApplicationsData.value = await props.listEdgeApplicationsService({})
+    isLoadingRequests.value = true
+    try {
+      edgeApplicationsData.value = await props.listEdgeApplicationsService({})
+    } catch (error) {
+      toastError(error)
+    } finally {
+      isLoadingRequests.value = false
+    }
+  }
+
+  const requestEdgeFirewalls = async () => {
+    isLoadingEdgeFirewalls.value = true
+    try {
+      edgeFirewallsData.value = await listEdgeFirewallService({})
+    } catch (error) {
+      toastError(error)
+    } finally {
+      isLoadingEdgeFirewalls.value = false
+    }
+  }
+
+  const handleEdgeApplicationCreated = async () => {
+    await requestEdgeApplications()
+  }
+
+  const handleEdgeFirewallCreated = async () => {
+    await requestEdgeFirewalls()
   }
 
   const requestDigitalCertificates = async () => {
@@ -164,7 +198,11 @@
 
   onMounted(async () => {
     try {
-      await Promise.all([requestEdgeApplications(), requestDigitalCertificates()])
+      await Promise.all([
+        requestEdgeApplications(),
+        requestDigitalCertificates(),
+        requestEdgeFirewalls()
+      ])
     } catch (error) {
       toastError(error)
     } finally {
@@ -174,7 +212,9 @@
 
   const initialValues = {
     name: '',
+    environment: 'production',
     edgeApplication: null,
+    edgeFirewall: null,
     cnames: '',
     cnameAccessOnly: true,
     mtlsIsEnabled: false,
@@ -219,6 +259,18 @@
         then: (schema) => schema.required()
       })
       .label('Trusted CA Certificate'),
-    active: yup.boolean()
+    active: yup.boolean(),
+    environment: yup.string()
   })
+
+  const updateDigitalCertificates = async () => {
+    try {
+      isLoadingRequests.value = true
+      digitalCertificates.value = await props.listDigitalCertificatesService({})
+    } catch (error) {
+      toastError(error)
+    } finally {
+      isLoadingRequests.value = false
+    }
+  }
 </script>

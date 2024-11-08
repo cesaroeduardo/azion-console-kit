@@ -131,14 +131,20 @@ const PAGES_DASHBOARDS = {
     {
       id: 9,
       label: 'Bot Manager',
-      path: 'bot-manager',
+      path: 'bot-manager-advanced',
       groupId: 2,
       dashboards: [
         {
           id: '371360344901061482',
-          label: 'Bot Manager Summary',
-          path: 'bot-manager-summary',
+          label: 'Overview',
+          path: 'overview',
           dataset: 'botManagerMetrics'
+        },
+        {
+          id: '659868342290523846',
+          label: 'Breakdown',
+          path: 'breakdown',
+          dataset: 'botManagerBreakdownMetrics'
         }
       ]
     }

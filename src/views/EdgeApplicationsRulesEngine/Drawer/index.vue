@@ -61,10 +61,19 @@
     },
     isEdgeFunctionEnabled: {
       type: Boolean
+    },
+    clipboardWrite: {
+      type: Function,
+      required: true
+    },
+    isLoadBalancerEnabled: {
+      type: Boolean,
+      required: true
     }
   })
 
   const toast = useToast()
+  const isOverlapped = ref(false)
 
   const showCreateRulesEngineDrawer = ref(false)
   const showEditRulesEngineDrawer = ref(false)
@@ -102,6 +111,8 @@
     isActive: true
   })
 
+  const isLoadingRequests = ref(true)
+
   const validationSchema = yup.object({
     name: yup.string().required().label('Name'),
     description: yup
@@ -133,6 +144,10 @@
     )
   })
 
+  const handleToggleDrawer = (value) => {
+    isOverlapped.value = value
+  }
+
   const createService = async (payload) => {
     return await props.createRulesEngineService({
       ...payload,
@@ -147,10 +162,14 @@
     })
   }
 
+  const loadingOrigins = ref(false)
+  const loadingFunctionsInstance = ref(false)
+
   const listFunctionsInstanceOptions = async () => {
     if (!props.isEdgeFunctionEnabled) return
 
     try {
+      loadingFunctionsInstance.value = true
       functionsInstanceOptions.value = await props.listEdgeApplicationFunctionsService(
         props.edgeApplicationId
       )
@@ -160,10 +179,13 @@
         severity: 'error',
         summary: error
       })
+    } finally {
+      loadingFunctionsInstance.value = false
     }
   }
 
   const listCacheSettingsOptions = async () => {
+    isLoadingRequests.value = true
     try {
       cacheSettingsOptions.value = await props.listCacheSettingsService({
         id: props.edgeApplicationId
@@ -174,11 +196,14 @@
         severity: 'error',
         summary: error
       })
+    } finally {
+      isLoadingRequests.value = false
     }
   }
 
   const listOriginsOptions = async () => {
     try {
+      loadingOrigins.value = true
       originsOptions.value = await props.listOriginsService({ id: props.edgeApplicationId })
     } catch (error) {
       toast.add({
@@ -186,6 +211,8 @@
         severity: 'error',
         summary: error
       })
+    } finally {
+      loadingOrigins.value = false
     }
   }
 
@@ -211,14 +238,24 @@
     }
   }
 
+  const handleTrackCreation = () => {
+    tracker.product
+      .productCreated({
+        productName: 'Rule',
+        product: 'edgeApplication'
+      })
+      .track()
+  }
+
   const handleFailedToCreate = (error) => {
     const { fieldName, message } = handleTrackerError(error)
     tracker.product
       .failedToCreate({
-        productName: 'Rules Engine',
+        productName: 'Rule',
         errorType: 'api',
         fieldName: fieldName.trim(),
-        errorMessage: message
+        errorMessage: message,
+        product: 'edgeApplication'
       })
       .track()
   }
@@ -227,10 +264,11 @@
     const { fieldName, message } = handleTrackerError(error)
     tracker.product
       .failedToEdit({
-        productName: 'Rules Engine',
+        productName: 'Rule',
         errorMessage: message,
         fieldName: fieldName,
-        errorType: 'api'
+        errorType: 'api',
+        product: 'edgeApplication'
       })
       .track()
 
@@ -246,11 +284,14 @@
 
   const handleCreateRulesEngine = () => {
     emit('onSuccess')
+    handleTrackCreation()
     closeDrawerCreate()
   }
+
   const handleTrackSuccessEdit = () => {
     tracker.product.productEdited({
-      productName: 'Rules Engine'
+      productName: 'Rule',
+      product: 'edgeApplication'
     })
     tracker.product
       .productEdited({
@@ -263,6 +304,18 @@
     emit('onSuccess')
     handleTrackSuccessEdit()
     closeDrawerEdit()
+  }
+
+  const handleRefreshCacheSettings = async () => {
+    await listCacheSettingsOptions()
+  }
+
+  const handleRefreshOrigins = async () => {
+    await listOriginsOptions()
+  }
+
+  const handleRefreshFunctions = async () => {
+    await listFunctionsInstanceOptions()
   }
 
   defineExpose({
@@ -283,6 +336,7 @@
 <template>
   <CreateDrawerBlock
     v-if="loadCreateRulesEngineDrawer"
+    :isOverlapped="isOverlapped"
     v-model:visible="showCreateRulesEngineDrawer"
     :createService="createService"
     :schema="validationSchema"
@@ -295,13 +349,22 @@
   >
     <template #formFields="{ errors }">
       <FormFieldsDrawerRulesEngine
+        :isLoadingRequests="isLoadingRequests"
+        :loadingOrigins="loadingOrigins"
+        :loadingFunctionsInstance="loadingFunctionsInstance"
         :initialPhase="initialPhase"
         :edgeApplicationId="props.edgeApplicationId"
         :isApplicationAcceleratorEnabled="props.isApplicationAcceleratorEnabled"
         :isDeliveryProtocolHttps="props.isDeliveryProtocolHttps"
         :functionsInstanceOptions="functionsInstanceOptions"
         :originsOptions="originsOptions"
+        :clipboardWrite="clipboardWrite"
+        :isLoadBalancerEnabled="isLoadBalancerEnabled"
         :cacheSettingsOptions="cacheSettingsOptions"
+        @toggleDrawer="handleToggleDrawer"
+        @refreshCacheSettings="handleRefreshCacheSettings"
+        @refreshOrigins="handleRefreshOrigins"
+        @refreshFunctions="handleRefreshFunctions"
         :hideApplicationAcceleratorInDescription="props.hideApplicationAcceleratorInDescription"
         :isImageOptimizationEnabled="props.isImageOptimizationEnabled"
         :isEdgeFunctionEnabled="props.isEdgeFunctionEnabled"
@@ -312,6 +375,7 @@
   </CreateDrawerBlock>
   <EditDrawerBlock
     v-if="loadEditRulesEngineDrawer"
+    :isOverlapped="isOverlapped"
     :id="selectedRulesEngineToEdit.id.toString()"
     v-model:visible="showEditRulesEngineDrawer"
     :loadService="loadService"
@@ -327,6 +391,12 @@
       <FormFieldsDrawerRulesEngine
         :selectedRulesEngineToEdit="selectedRulesEngineToEdit"
         :edgeApplicationId="props.edgeApplicationId"
+        :isLoadingRequests="isLoadingRequests"
+        :loadingOrigins="loadingOrigins"
+        :loadingFunctionsInstance="loadingFunctionsInstance"
+        @toggleDrawer="handleToggleDrawer"
+        :clipboardWrite="clipboardWrite"
+        :isLoadBalancerEnabled="isLoadBalancerEnabled"
         :isApplicationAcceleratorEnabled="props.isApplicationAcceleratorEnabled"
         :isDeliveryProtocolHttps="props.isDeliveryProtocolHttps"
         :functionsInstanceOptions="functionsInstanceOptions"

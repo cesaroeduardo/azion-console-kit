@@ -33,11 +33,11 @@ const getConfig = () => {
     },
     server: {
       proxy: {
-        '^/api/(marketplace|script-runner|template-engine)': {
+        '^/api/(marketplace|script-runner|template-engine|iam)': {
           target: `${URLStartPrefix}manager.azion.com/`,
           changeOrigin: true,
           rewrite: (path) =>
-            path.replace(/^\/api\/(marketplace|script-runner|template-engine)/, '/$1/api')
+            path.replace(/^\/api\/(marketplace|script-runner|template-engine|iam)/, '/$1/api')
         },
         '^/api/vcs': {
           target: `${URLStartPrefix}vcs-api.azion.net/`,
@@ -54,11 +54,6 @@ const getConfig = () => {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/graphql\/billing/, '/billing/graphql')
         },
-        '/api/allowed-accounts': {
-          target: `https://raw.githubusercontent.com/aziontech/console-client-list/main/clids.json`,
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api\/allowed-accounts/, '')
-        },
         '/api/webhook/console_feedback': {
           target: `https://automate.azion.net/`,
           changeOrigin: true,
@@ -73,6 +68,16 @@ const getConfig = () => {
           target: `${URLStartPrefix}api.azion.com`,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, '')
+        },
+        '/webpagetest': {
+          target: `https://www.azion.com/api/webpagetest`,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/webpagetest/, '')
+        },
+        '/webpagetest-external': {
+          target: `https://www.azion.com/api/webpagetest`,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/webpagetest-external/, '')
         }
       }
     }

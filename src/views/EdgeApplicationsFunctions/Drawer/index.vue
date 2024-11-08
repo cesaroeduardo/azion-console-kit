@@ -3,15 +3,21 @@
     v-if="loadCreateFunctionDrawer"
     v-model:visible="showCreateFunctionDrawer"
     :createService="props.createFunctionService"
+    drawerId="create-function-instance-drawer"
     :schema="validationSchema"
     :initialValues="initialValues"
+    :isOverlapped="isOverlapped"
     @onSuccess="handleSuccessCreate"
     @onError="handleFailedToCreate"
     :showBarGoBack="true"
     title="Create Instance"
   >
     <template #formFields>
-      <FormFieldsDrawerFunction :edgeFunctionsList="filteredEdgeFunctions" />
+      <FormFieldsDrawerFunction
+        @toggleDrawer="handleToggleDrawer"
+        :edgeFunctionsList="filteredEdgeFunctions"
+        :reloadEdgeFunctions="loadEdgeFunctions"
+      />
     </template>
   </CreateDrawerBlock>
   <EditDrawerBlock
@@ -19,6 +25,7 @@
     :id="selectedFunctionToEdit"
     v-model:visible="showEditFunctionDrawer"
     :loadService="loadService"
+    :isOverlapped="isOverlapped"
     :editService="editService"
     :schema="validationSchema"
     :showBarGoBack="true"
@@ -27,7 +34,10 @@
     title="Edit Instance"
   >
     <template #formFields>
-      <FormFieldsDrawerFunction :edgeFunctionsList="filteredEdgeFunctions" />
+      <FormFieldsDrawerFunction
+        @toggleDrawer="handleToggleDrawer"
+        :edgeFunctionsList="filteredEdgeFunctions"
+      />
     </template>
   </EditDrawerBlock>
 </template>
@@ -76,6 +86,7 @@
   const loadCreateFunctionDrawer = refDebounced(showCreateFunctionDrawer, debouncedDrawerAnimate)
   const loadEditFunctionDrawer = refDebounced(showEditFunctionDrawer, debouncedDrawerAnimate)
   const selectedFunctionToEdit = ref('')
+  const isOverlapped = ref(false)
   const edgeFunctionsList = ref([])
   const filteredEdgeFunctions = computed(() =>
     edgeFunctionsList.value.filter((element) => element.initiatorType === 'edge_application')
@@ -101,7 +112,7 @@
 
   const handleTrackSuccessEdit = () => {
     tracker.product.productEdited({
-      productName: 'Functions Instances'
+      productName: 'Function Instances'
     })
     tracker.product
       .productEdited({
@@ -114,7 +125,7 @@
   const handleTrackCreation = () => {
     tracker.product
       .productCreated({
-        productName: 'Functions Instances'
+        productName: 'Function Instances'
       })
       .track()
   }
@@ -123,7 +134,7 @@
     const { fieldName, message } = handleTrackerError(error)
     tracker.product
       .failedToCreate({
-        productName: 'Functions Instances',
+        productName: 'Function Instances',
         errorType: 'api',
         fieldName: fieldName.trim(),
         errorMessage: message
@@ -131,11 +142,15 @@
       .track()
   }
 
+  const handleToggleDrawer = (value) => {
+    isOverlapped.value = value
+  }
+
   const handleFailedToEdit = (error) => {
     const { fieldName, message } = handleTrackerError(error)
     tracker.product
       .failedToEdit({
-        productName: 'Functions Instances',
+        productName: 'Function Instances',
         errorMessage: message,
         fieldName: fieldName,
         errorType: 'api'
@@ -193,8 +208,17 @@
     showCreateFunctionDrawer.value = false
   }
 
+  const loadEdgeFunctions = async () => {
+    const response = await props.listEdgeFunctionsService({})
+    edgeFunctionsList.value = response
+  }
+
+  onMounted(loadEdgeFunctions)
+
   defineExpose({
+    showCreateFunctionDrawer,
     openDrawerCreate,
-    openDrawerEdit
+    openDrawerEdit,
+    loadEdgeFunctions
   })
 </script>

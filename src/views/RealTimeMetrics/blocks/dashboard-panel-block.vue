@@ -68,6 +68,7 @@
   )
 
   const changeDashboard = async (evt) => {
+    if (!evt.value) return
     setCurrentDashboard(evt.value)
     await setDatasetAvailableFilters()
     await loadCurrentReports(props.userUTC)
@@ -105,6 +106,7 @@
             <BigNumbers
               :report="bigNumberReport"
               :clipboardWrite="clipboardWrite"
+              :groupData="groupData"
             />
           </template>
         </div>
@@ -116,6 +118,7 @@
       >
         <GraphsCardBlock
           :report="report"
+          :groupData="groupData"
           :clipboardWrite="clipboardWrite"
         />
       </template>

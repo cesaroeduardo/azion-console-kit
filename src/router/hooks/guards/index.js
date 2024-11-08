@@ -4,5 +4,17 @@ import { accountGuard } from './accountGuard'
 import { themeGuard } from './themeGuard'
 import { billingGuard } from './billingGuard'
 import { redirectGuard } from './redirectGuard'
-
-export { logoutGuard, loadingGuard, accountGuard, themeGuard, billingGuard, redirectGuard }
+import { redirectToManagerGuard } from './redirectToManagerGuard'
+import { ssoManagementGuard } from './SSOManagementGuard'
+import { domainsLimitGuard } from './domainsLimitGuard'
+export {
+  logoutGuard,
+  loadingGuard,
+  accountGuard,
+  themeGuard,
+  billingGuard,
+  redirectGuard,
+  redirectToManagerGuard,
+  ssoManagementGuard,
+  domainsLimitGuard
+}

@@ -11,6 +11,7 @@
         addButtonLabel="Personal Token"
         createPagePath="personal-tokens/create"
         @on-load-data="handleLoadData"
+        @on-before-go-to-add-page="handleTrackEvent"
         :enableEditClick="false"
         emptyListMessage="No personal tokens found."
         :actions="actions"
@@ -21,6 +22,7 @@
         description="Click the button below to generate your first personal token."
         createButtonLabel="Personal Token"
         createPagePath="personal-tokens/create"
+        @click-to-create="handleTrackEvent"
         :documentationService="documentationService"
       >
         <template #illustration>
@@ -38,7 +40,10 @@
   import ListTableBlock from '@/templates/list-table-block'
   import { columnBuilder } from '@/templates/list-table-block/columns/column-builder'
   import PageHeadingBlock from '@/templates/page-heading-block'
-  import { ref } from 'vue'
+  import { ref, inject } from 'vue'
+
+  /**@type {import('@/plugins/analytics/AnalyticsTrackerAdapter').AnalyticsTrackerAdapter} */
+  const tracker = inject('tracker')
 
   const props = defineProps({
     listPersonalTokensService: {
@@ -95,5 +100,11 @@
 
   const handleLoadData = (event) => {
     hasContentToList.value = event
+  }
+
+  const handleTrackEvent = () => {
+    tracker.product.clickToCreate({
+      productName: 'Personal Token'
+    })
   }
 </script>

@@ -244,19 +244,6 @@ const backRules = [
     }
   },
   {
-    name: 'Route List Client Ids to Github',
-    description: 'this route will get the client ids of the accounts released to the console',
-    match: '^/api/allowed-accounts',
-    behavior: {
-      forwardCookies: true,
-      setOrigin: {
-        name: 'origin-github-allowed-accounts',
-        type: 'single_origin'
-      },
-      rewrite: '/aziontech/console-client-list/main/clids.json'
-    }
-  },
-  {
     name: 'Route Send Feedback',
     description: 'this route will send user feedback to jira',
     match: '^/api/webhook/console_feedback',
@@ -267,6 +254,24 @@ const backRules = [
         type: 'single_origin'
       },
       rewrite: '/webhook/console_feedback'
+    }
+  },
+  {
+    name: 'Route API Identity Providers',
+    description: 'Routes API requests for identity providers',
+    match: '^/api/iam',
+    behavior: {
+      forwardCookies: true,
+      setOrigin: {
+        name: 'origin-manager',
+        type: 'single_origin'
+      },
+      capture: {
+        match: '/api/iam/(.*)',
+        captured: 'captured',
+        subject: 'request_uri'
+      },
+      rewrite: `/iam/api/%{captured[1]}`
     }
   }
 ]
@@ -308,20 +313,14 @@ const AzionConfig = {
         type: 'single_origin',
         hostHeader: `api.azion.com`,
         addresses: [`api.azion.com`]
-      },
+      }
     ]),
-    {
-      name: 'origin-github-allowed-accounts',
-      type: 'single_origin',
-      hostHeader: `raw.githubusercontent.com`,
-      addresses: [`raw.githubusercontent.com`]
-    },
     {
       name: 'origin-console-feedback',
       type: 'single_origin',
       hostHeader: `automate.azion.net`,
       addresses: [`automate.azion.net`]
-    },
+    }
   ],
   rules: {
     request: [...commonRules, ...frontRules, ...backRules],
