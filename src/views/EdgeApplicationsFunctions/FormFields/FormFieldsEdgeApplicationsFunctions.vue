@@ -5,11 +5,13 @@
   import FieldDropdownLazyLoader from '@/templates/form-fields-inputs/fieldDropdownLazyLoader'
   import PrimeButton from 'primevue/button'
   import Drawer from '@/views/EdgeFunctions/Drawer/index.vue'
+  import SelectButton from 'primevue/selectbutton'
 
   import { useField } from 'vee-validate'
-  import { computed, ref, watch } from 'vue'
+  import { computed, ref, watch, onMounted } from 'vue'
 
   const emit = defineEmits(['toggleDrawer'])
+  const ARGS_INITIAL_STATE = '{}'
 
   const props = defineProps({
     listEdgeFunctionsService: {
@@ -34,6 +36,7 @@
   const changeArgs = (target) => {
     if (target?.args) {
       args.value = target?.args
+      updateGroupsFromJson(target.args)
     }
   }
 
@@ -51,6 +54,110 @@
   const hasArgsError = computed(() => {
     return !!argsError.value
   })
+
+  const viewOptions = ref([
+    { name: 'JSON', value: 'json' },
+    { name: 'Form', value: 'form' }
+  ])
+  const selectedView = ref('json')
+
+  onMounted(() => {
+    updateGroupsFromJson(args.value)
+  })
+
+  // Estado reativo para os grupos
+  const groupsState = ref({})
+
+  // Função para atualizar o estado dos grupos baseado no JSON
+  const updateGroupsFromJson = (jsonString) => {
+    try {
+      const parsed = JSON.parse(jsonString || ARGS_INITIAL_STATE)
+      const groups = {}
+
+      const extractGroups = (obj, currentPath = []) => {
+        Object.keys(obj).forEach((key) => {
+          const value = obj[key]
+          const newPath = [...currentPath, key]
+
+          if (value && typeof value === 'object' && !Array.isArray(value)) {
+            if (
+              Object.keys(value).some(
+                (subKey) => typeof value[subKey] === 'object' && !Array.isArray(value[subKey])
+              )
+            ) {
+              extractGroups(value, newPath)
+            } else {
+              const groupName = newPath[newPath.length - 1]
+              if (!groups[groupName]) {
+                groups[groupName] = {}
+              }
+              Object.keys(value).forEach((subKey) => {
+                groups[groupName][subKey] = value[subKey]
+              })
+            }
+          }
+        })
+      }
+
+      extractGroups(parsed)
+      groupsState.value = groups
+    } catch (error) {
+      // Silently handle parsing errors
+    }
+  }
+
+  // Função para atualizar o JSON baseado no estado dos grupos
+  const updateJsonFromGroups = () => {
+    try {
+      const currentJson = JSON.parse(args.value || ARGS_INITIAL_STATE)
+      const updatedJson = { ...currentJson }
+
+      Object.keys(groupsState.value).forEach((groupName) => {
+        const groupPath = ['param', groupName]
+        let current = updatedJson
+        for (let index = 0; index < groupPath.length - 1; index++) {
+          current = current[groupPath[index]]
+        }
+        current[groupPath[groupPath.length - 1]] = groupsState.value[groupName]
+      })
+
+      return JSON.stringify(updatedJson, null, 2)
+    } catch (error) {
+      // Silently handle parsing errors
+      return args.value
+    }
+  }
+
+  // Watch para atualizar o JSON quando os grupos mudarem
+  watch(
+    groupsState,
+    () => {
+      const newJson = updateJsonFromGroups()
+      if (newJson !== args.value) {
+        args.value = newJson
+      }
+    },
+    { deep: true }
+  )
+
+  // Função para lidar com mudanças no editor
+  const handleEditorChange = (value) => {
+    updateGroupsFromJson(value)
+  }
+
+  const formatLabel = (text) => {
+    return text
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  }
+
+  const formatGroupTitle = (text) => {
+    return text
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  }
 
   watch(
     () => drawerRef.value.showCreateDrawer,
@@ -129,24 +236,80 @@
         </FieldDropdownLazyLoader>
       </div>
 
-      <div class="flex flex-col gap-2 w-full">
-        <CodeEditor
-          v-model="args"
-          language="json"
-          class="min-h-[200px] overflow-clip surface-border border rounded-md"
-          :errors="hasArgsError"
-          :minimap="false"
-        />
-        <small
-          v-if="argsError"
-          class="p-error text-xs font-normal leading-tight"
+      <div class="flex flex-col gap-4 surface-border border rounded-md p-6 md:p-8">
+        <div class="w-full flex mb-4 justify-between items-end">
+          <div class="flex flex-col gap-2">
+            <h3 class="text-lg font-semibold">Arguments</h3>
+            <p class="text-sm text-color-secondary">
+              Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.
+            </p>
+          </div>
+          <SelectButton
+            v-model="selectedView"
+            :options="viewOptions"
+            optionLabel="name"
+            optionValue="value"
+          />
+        </div>
+
+        <div
+          class="w-full"
+          :class="{ hidden: selectedView !== 'json' }"
         >
-          {{ argsError }}
-        </small>
-        <small class="text-xs text-color-secondary font-normal leading-5">
-          Customize the arguments in JSON format. Once set, they can be called in code using
-          <code>event.args("arg_name")</code>.
-        </small>
+          <CodeEditor
+            v-model="args"
+            language="json"
+            class="min-h-[200px] overflow-clip surface-border border rounded-md"
+            :errors="hasArgsError"
+            :minimap="false"
+            @update:modelValue="handleEditorChange"
+          />
+          <small
+            v-if="argsError"
+            class="p-error text-xs font-normal leading-tight"
+          >
+            {{ argsError }}
+          </small>
+          <small class="text-xs text-color-secondary font-normal leading-5">
+            Customize the arguments in JSON format. Once set, they can be called in code using
+            <code>event.args("arg_name")</code>.
+          </small>
+        </div>
+
+        <div
+          class="flex flex-col gap-6 w-full"
+          :class="{ hidden: selectedView !== 'form' }"
+        >
+          <div class="border surface-border rounded-md p-6 md:p-8">
+            <template
+              v-for="(group, groupName) in groupsState"
+              :key="groupName"
+            >
+              <div class="flex flex-col gap-5 md:gap-10 w-full">
+                <div class="flex flex-col gap-2">
+                  <h3 class="text-lg font-semibold">{{ formatGroupTitle(groupName) }}</h3>
+                  <p class="text-sm text-color-secondary">
+                    {{ `Configure the ${formatGroupTitle(groupName)} parameters.` }}
+                  </p>
+                </div>
+                <div class="flex flex-col gap-6 w-full mb-10">
+                  <div
+                    v-for="(value, key) in group"
+                    :key="key"
+                    class="flex flex-col gap-2 w-full"
+                  >
+                    <FieldText
+                      :label="formatLabel(key)"
+                      :name="`arg_${groupName}_${key}`"
+                      v-model="groupsState[groupName][key]"
+                      :value="groupsState[groupName][key]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
       </div>
     </template>
   </FormHorizontal>

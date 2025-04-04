@@ -10,8 +10,9 @@
   import FieldGroupRadio from '@/templates/form-fields-inputs/fieldGroupRadio'
   import CodeEditor from '../components/code-editor.vue'
   import CodePreview from '../components/code-preview.vue'
+  import SelectButton from 'primevue/selectbutton'
   import { useField } from 'vee-validate'
-  import { computed, ref, watch } from 'vue'
+  import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 
   defineProps(['previewData', 'lang'])
   const emit = defineEmits(['update:previewData', 'update:lang', 'update:name'])
@@ -28,12 +29,36 @@
     return previewState.value && language.value !== 'lua'
   })
 
+  const viewOptions = ref([
+    { name: 'Form', value: 'form' },
+    { name: 'JSON', value: 'json' }
+  ])
+  const selectedView = ref('form')
+  const isMobile = ref(false)
+
+  const checkScreenSize = () => {
+    isMobile.value = window.innerWidth < 768 // md breakpoint do Tailwind
+  }
+
+  onMounted(() => {
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+    updateGroupsFromJson(args.value)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('resize', checkScreenSize)
+  })
+
   const { value: name } = useField('name')
 
   const { value: isProprietaryCode } = useField('isProprietaryCode')
   const { value: args, errorMessage: argsError } = useField('args')
   const { value: code, errorMessage: codeError } = useField('code')
   const { value: language } = useField('language')
+
+  // Estado reativo para os grupos
+  const groupsState = ref({})
 
   let initialCodeValue = ''
   let initialJsonArgsValue = ARGS_INITIAL_STATE
@@ -74,6 +99,106 @@
     emit('update:previewData', previewValues)
     return previewValues
   })
+
+  // Função para atualizar o estado dos grupos baseado no JSON
+  const updateGroupsFromJson = (jsonString) => {
+    try {
+      const parsed = JSON.parse(jsonString || ARGS_INITIAL_STATE)
+      const groups = {}
+
+      const extractGroups = (obj, currentPath = []) => {
+        Object.keys(obj).forEach((key) => {
+          const value = obj[key]
+          const newPath = [...currentPath, key]
+
+          if (value && typeof value === 'object' && !Array.isArray(value)) {
+            if (
+              Object.keys(value).some(
+                (subKey) => typeof value[subKey] === 'object' && !Array.isArray(value[subKey])
+              )
+            ) {
+              extractGroups(value, newPath)
+            } else {
+              const groupName = newPath[newPath.length - 1]
+              if (!groups[groupName]) {
+                groups[groupName] = {}
+              }
+              Object.keys(value).forEach((subKey) => {
+                groups[groupName][subKey] = value[subKey]
+              })
+            }
+          }
+        })
+      }
+
+      extractGroups(parsed)
+      groupsState.value = groups
+    } catch (error) {
+      // Silently handle parsing errors
+    }
+  }
+
+  // Watch para atualizar o estado dos grupos quando o JSON mudar
+  watch(
+    args,
+    (newValue) => {
+      updateGroupsFromJson(newValue)
+    },
+    { immediate: true }
+  )
+
+  // Função para atualizar o JSON baseado no estado dos grupos
+  const updateJsonFromGroups = () => {
+    try {
+      const currentJson = JSON.parse(args.value || ARGS_INITIAL_STATE)
+      const updatedJson = { ...currentJson }
+
+      Object.keys(groupsState.value).forEach((groupName) => {
+        const groupPath = ['param', groupName]
+        let current = updatedJson
+        for (let index = 0; index < groupPath.length - 1; index++) {
+          current = current[groupPath[index]]
+        }
+        current[groupPath[groupPath.length - 1]] = groupsState.value[groupName]
+      })
+
+      return JSON.stringify(updatedJson, null, 2)
+    } catch (error) {
+      // Silently handle parsing errors
+      return args.value
+    }
+  }
+
+  // Watch para atualizar o JSON quando os grupos mudarem
+  watch(
+    groupsState,
+    () => {
+      const newJson = updateJsonFromGroups()
+      if (newJson !== args.value) {
+        args.value = newJson
+      }
+    },
+    { deep: true }
+  )
+
+  // Função para lidar com mudanças no editor
+  const handleEditorChange = (value) => {
+    updateGroupsFromJson(value)
+  }
+
+  const formatLabel = (text) => {
+    return text
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  }
+
+  const formatGroupTitle = (text) => {
+    return text
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  }
 
   const initiatorTypeOptions = [
     {
@@ -227,36 +352,63 @@
     </TabPanel>
 
     <TabPanel header="Arguments">
-      <Splitter
-        :style="{ height: SPLITTER_PROPS.height }"
-        class="mt-8 surface-border border rounded-md hidden md:flex"
-        @resizestart="previewState = false"
-        @resizeend="previewState = true"
-        :layout="SPLITTER_PROPS.layout"
-      >
-        <SplitterPanel :size="SPLITTER_PROPS.panelsSizes[0]">
+      <div class="flex flex-col md:flex-row mt-8 md:gap-8">
+        <div class="md:hidden mb-4 w-full flex justify-start">
+          <SelectButton
+            v-model="selectedView"
+            :options="viewOptions"
+            optionLabel="name"
+            optionValue="value"
+          />
+        </div>
+
+        <div
+          class="w-full md:w-3/4 h-[50vh]"
+          :class="{ hidden: isMobile && selectedView !== 'json' }"
+        >
           <CodeEditor
             v-model="args"
             :initialValue="initialJsonArgsValue"
             language="json"
             :errors="hasArgsError"
+            @update:modelValue="handleEditorChange"
           />
-        </SplitterPanel>
+        </div>
 
-        <SplitterPanel
-          v-if="showPreview"
-          :size="SPLITTER_PROPS.panelsSizes[1]"
+        <div
+          class="flex flex-col gap-6 w-full md:w-3/6 md:h-[50vh] md:overflow-y-scroll"
+          :class="{ hidden: isMobile && selectedView !== 'form' }"
         >
-          <CodePreview :updateObject="updateObject" />
-        </SplitterPanel>
-      </Splitter>
-      <div class="flex flex-col mt-8 surface-border border rounded-md md:hidden h-[50vh]">
-        <CodeEditor
-          v-model="args"
-          :initialValue="initialJsonArgsValue"
-          language="json"
-          :errors="hasArgsError"
-        />
+          <div class="border surface-border rounded-md p-6 md:p-8">
+            <template
+              v-for="(group, groupName) in groupsState"
+              :key="groupName"
+            >
+              <div class="flex flex-col gap-5 md:gap-10 w-full">
+                <div class="flex flex-col gap-2">
+                  <h3 class="text-lg font-semibold">{{ formatGroupTitle(groupName) }}</h3>
+                  <p class="text-sm text-color-secondary">
+                    {{ `Configure the ${formatGroupTitle(groupName)} parameters.` }}
+                  </p>
+                </div>
+                <div class="flex flex-col gap-6 w-full mb-10">
+                  <div
+                    v-for="(value, key) in group"
+                    :key="key"
+                    class="flex flex-col gap-2 w-full"
+                  >
+                    <FieldText
+                      :label="formatLabel(key)"
+                      :name="`arg_${groupName}_${key}`"
+                      v-model="groupsState[groupName][key]"
+                      :value="groupsState[groupName][key]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
       </div>
     </TabPanel>
   </TabView>
